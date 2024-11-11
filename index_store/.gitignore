@@ -1,0 +1,5 @@
+# Ignore everything in this directory except itself
+# This ensures this directory stays empty when pushing
+# Index files may be heavy
+*
+!.gitignore
