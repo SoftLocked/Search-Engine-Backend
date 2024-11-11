@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from pathlib import Path
-import bs4
-
+from bs4 import BeautifulSoup
+import json
 
 
 class Token:
@@ -13,3 +13,15 @@ class Token:
 
     def __repr__(self) -> str:
         return self.tok_str
+
+
+def parse_json(file_path: Path) -> Iterator[Token]:
+    url = ''
+    content = ''
+    encoding = ''
+    with open(file_path, 'r') as in_file:
+        return json.load(in_file)
+
+
+
+
