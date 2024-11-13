@@ -83,8 +83,7 @@ class Page_Data:
             else:
                 token_freq[tok] += 1
         
-        for i in token_freq.items():
-            yield i
+        return token_freq.items()
 
 
 class Index:
@@ -110,6 +109,10 @@ class Index:
         page_count = len(list(root_path.rglob("*.json")))
 
         start_time = time.time()
+
+        visited = set()
+        with open('visited.json', 'r') as in_file:
+            visited = set(json.load(in_file))
         
         temp_iter = 0
         iter = 0
@@ -118,8 +121,20 @@ class Index:
                 
                 
                 for j, file in enumerate(dir.iterdir()):
+
+                    if str(file) in visited:
+                        temp_iter += 1
+                        iter += 1
+                        continue
+                
+                    visited.add(str(file))
                     
+                    if iter % 50:
+                        with open('visited.json', 'w') as out_file:
+                            json.dump(list(visited), out_file, indent=4)
+
                     if iter % 500 == 0:
+
                         start_time = time.time()
                         temp_iter = 0
                     
@@ -173,10 +188,9 @@ class Index:
             data = json.load(in_file)
 
         if token.tok_str not in data:
-            data[token.tok_str] = dict()
-            data[token.tok_str][page.url] = freq
-        elif page.url not in data[token.tok_str]:
-            data[token.tok_str][page.url] = freq
+            data[token.tok_str] = [[page.url, freq]]
+        else:
+            data[token.tok_str].append([page.url, freq])
 
         with open(f'index_store/{bin}.json', 'w') as out_file:
             json.dump(data, out_file, indent=4)
