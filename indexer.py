@@ -9,9 +9,6 @@ import time
 from datetime import datetime, timedelta
 
 ps = PorterStemmer()
-custom_stop_words = ['techology', 'public']
-stop_words = list(stopwords.words('english')) + custom_stop_words
-stop_words = set([ps.stem(i) for i in stop_words])
 
 class Token:
     def __init__(self, tok_str: str) -> None:
@@ -73,8 +70,7 @@ class Page_Data:
                 if len(curr_buff) > 0:
                     tok = Token(ps.stem(''.join(curr_buff)))
                     if tok not in token_freq:
-                        if tok.tok_str not in stop_words:
-                            token_freq[tok] = 1
+                        token_freq[tok] = 1
                     else:
                         token_freq[tok] += 1
 
