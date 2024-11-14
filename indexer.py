@@ -60,7 +60,7 @@ class Page_Data:
     def encoding(self, new_encoding:str) -> None:
         print(f'Attempted to change encoding | {self.encoding} -> {new_encoding}')
 
-    def get_tokens(self, bins) -> list[Token]:
+    def get_tokens(self) -> list[Token]:
         page_text = BeautifulSoup(self.content, 'lxml', from_encoding=self.encoding).text
 
         token_freq = dict()
@@ -88,28 +88,16 @@ class Page_Data:
             else:
                 token_freq[tok] += 1
         
-        result = dict()
-        for i, (k,v) in enumerate(token_freq.items()):
-            bin = hash(k)%bins
-            if bin not in result:
-                result[bin] = [[k,v]]
-            else:
-                result[bin].append([k,v])
-        return result
+        return token_freq.items()
 
 
 class Index:
-    def __init__(self, bins:int) -> None:
-        self.num_docs = 0
-        self.bins = bins
+    def __init__(self) -> None:
+        self.current_index = dict()
         for item in Path('index_store/').iterdir():
             if item.is_file():
                 if item.name != '.gitignore':
                     item.unlink()
-        for i in range(self.bins):
-            # Path(f'index_store/{i}.json').touch()
-            with open(f'index_store/{i}.json', 'w') as out_file:
-                json.dump({}, out_file)
 
     def crawl_json(self) -> None:
 
@@ -120,83 +108,66 @@ class Index:
 
         page_count = len(list(root_path.rglob("*.json")))
 
-        leave_off = 0
-        with open('leave_off.txt', 'r') as in_file:
-            leave_off = int(next(in_file))
-
         size = 0
 
+        start_time = time.time()
+
+        num_docs = 0
+
+        temp_iter = 0
         iter = 0
         for i, dir in enumerate(root_path.iterdir()):
-            #if dir.is_dir():
-            #if str(dir) in ['DEV/flamingo_ics_uci_edu', 'DEV/grape_ics_uci_edu']:
-                #print(f'Skippping {dir}')
-                #iter += len(list(dir.glob("*.json")))
-                #continue
                 
             for j, file in enumerate(dir.iterdir()):
 
-                
-
-                if iter <= leave_off:
-                    iter += 1
-                    continue
-
                 if file.is_file() and file.suffix == '.json':
                     page = Page_Data(file)
-                    self.store_tokens(page, page.get_tokens(self.bins))
+                    self.store_tokens(page, page.get_tokens())
 
-                
-                #if elapsed_time <= 3 * cumulative_time_per_iter/(iter + 1):
-                    #cumulative_time_per_iter += elapsed_time
-                #elif cumulative_time_per_iter == 0:
-                    #cumulative_time_per_iter += elapsed_time
-            
-                #avg = cumulative_time_per_iter/(iter + 1)
-                
-
-                #print(elapsed_time, iter+1, eta, etat)
-
-                # with open('leave_off.txt', 'w') as out_file:
-                    # out_file.write(f'{iter}\n')
-
-                self.num_docs += 1
+                num_docs += 1
 
                 size += file.stat().st_size/1000000
 
-                if (iter%100 == 0):
-                    
-                    #curr_time = time.time()
-                    #elapsed_time = curr_time - start_time
-                    #eta = (elapsed_time)/(temp_iter+1) * (page_count - (iter + 1))
-                    #eta = str(timedelta(seconds=eta))
-                    with open('report.txt', 'w') as out_file:
-                        out_file.write(f'Number of Documents Indexed: {self.num_docs}\n')
-                    perc = f'{100*(iter)/page_count:.4f} %'
-                    #print(f'{datetime.now().strftime("%H:%M:%S")} | {file.stat().st_size/1000000:<5} MB | {file}')
-                    print(f'{datetime.now().strftime("%H:%M:%S")} | Processing File {iter + 1:<5} of {page_count} | {perc:<10} | {size:<5.2f} MB | {file}')
-                    size = 0
+                if (iter%10000 == 0):
+                    with open(f'index_store/{iter}_pages_checkpoint.json', 'w') as out_file:
+                        #print(iter)
+                        #print(self.current_index)
+                        json.dump(self.current_index, out_file, indent=4)
+                        self.current_index = dict()
 
+
+                if (iter%100 == 0):
+                    curr_time = time.time()
+                    elapsed_time = curr_time - start_time
+                    eta = (elapsed_time)/(temp_iter+1) * (page_count - (iter + 1))
+                    eta = str(timedelta(seconds=eta))
+                    with open('report.txt', 'w') as out_file:
+                        out_file.write(f'Number of Documents Indexed: {num_docs}\n')
+                    perc = f'{100*(iter)/page_count:.4f} %'
+                    print(f'{datetime.now().strftime("%H:%M:%S")} | Processed File {iter:<5} of {page_count} | {perc:<10} | eta {eta:<10} | {size:<5.2f} MB | {file}')
+                    
+                    start_time = time.time()
+                    size = 0
+                    temp_iter = 0
+
+                temp_iter += 1
                 iter += 1
         
-        with open('report.txt') as out_file:
-            out_file.write(f'Number of Documents Indexed: {self.num_docs}\n')
+        with open(f'index_store/{iter}_pages_checkpoint.json', 'w') as out_file:
+            json.dump(self.current_index, out_file, indent=4)
+
+        with open('report.txt', 'w') as out_file:
+            out_file.write(f'Number of Documents Indexed: {num_docs}\n')
         print('Indexing Compete!')
 
-    def store_tokens(self, page:Page_Data, tokens:dict[int, list[list[Token, int]]]):
-        for bin, tokens in tokens.items():
-            data = dict()
-            with open(f'index_store/{bin}.json', 'r') as in_file:
-                data = json.load(in_file)
+        print(f"Finished Processing! {iter} out of {page_count}")
 
-            for token, freq in tokens:
-                if token.tok_str not in data:
-                    data[token.tok_str] = [[page.url, freq]]
-                else:
-                    data[token.tok_str].append([page.url, freq])
-
-            with open(f'index_store/{bin}.json', 'w') as out_file:
-                json.dump(data, out_file, indent=4)
+    def store_tokens(self, page:Page_Data, tokens:list[tuple[Token, int]]):
+        for token, freq in tokens:
+            if token.tok_str not in self.current_index:
+                self.current_index[token.tok_str] = [[page.url, freq]]
+            else:
+                self.current_index[token.tok_str].append([page.url, freq])
             
         
     
