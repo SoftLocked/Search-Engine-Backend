@@ -4,8 +4,14 @@ from bs4 import BeautifulSoup
 import json
 import shutil
 from nltk.stem import PorterStemmer
+from nltk.corpus import stopwords
 import time
 from datetime import datetime, timedelta
+
+ps = PorterStemmer()
+custom_stop_words = ['techology', 'public']
+stop_words = list(stopwords.words('english')) + custom_stop_words
+stop_words = set([ps.stem(i) for i in stop_words])
 
 class Token:
     def __init__(self, tok_str: str) -> None:
@@ -56,20 +62,19 @@ class Page_Data:
 
     def get_tokens(self, bins) -> list[Token]:
         page_text = BeautifulSoup(self.content, 'lxml', from_encoding=self.encoding).text
-        
-        ps = PorterStemmer()
 
         token_freq = dict()
 
         curr_buff = []
         for i, curr_char in enumerate(page_text):
-            if 'a' <= curr_char.lower() <= 'z' or '0' <= curr_char <= '9':
-                curr_buff.append(curr_char.lower())
+            if 'a' <= curr_char <= 'z' or 'A' <= curr_char <= 'Z' or '0' <= curr_char <= '9':
+                curr_buff.append(curr_char)
             else:
                 if len(curr_buff) > 0:
                     tok = Token(ps.stem(''.join(curr_buff)))
                     if tok not in token_freq:
-                        token_freq[tok] = 1
+                        if tok.tok_str not in stop_words:
+                            token_freq[tok] = 1
                     else:
                         token_freq[tok] += 1
 
@@ -119,10 +124,15 @@ class Index:
         with open('leave_off.txt', 'r') as in_file:
             leave_off = int(next(in_file))
 
+        size = 0
+
         iter = 0
         for i, dir in enumerate(root_path.iterdir()):
             #if dir.is_dir():
-                
+            #if str(dir) in ['DEV/flamingo_ics_uci_edu', 'DEV/grape_ics_uci_edu']:
+                #print(f'Skippping {dir}')
+                #iter += len(list(dir.glob("*.json")))
+                #continue
                 
             for j, file in enumerate(dir.iterdir()):
 
@@ -152,7 +162,9 @@ class Index:
 
                 self.num_docs += 1
 
-                if ((iter+1) % 100 == 0):
+                size += file.stat().st_size/1000000
+
+                if (iter%100 == 0):
                     
                     #curr_time = time.time()
                     #elapsed_time = curr_time - start_time
@@ -161,7 +173,9 @@ class Index:
                     with open('report.txt', 'w') as out_file:
                         out_file.write(f'Number of Documents Indexed: {self.num_docs}\n')
                     perc = f'{100*(iter)/page_count:.4f} %'
-                    print(f'{datetime.now().strftime("%H:%M:%S")} | Processing File {iter + 1:<5} of {page_count} | {perc:<10} | {file}')
+                    #print(f'{datetime.now().strftime("%H:%M:%S")} | {file.stat().st_size/1000000:<5} MB | {file}')
+                    print(f'{datetime.now().strftime("%H:%M:%S")} | Processing File {iter + 1:<5} of {page_count} | {perc:<10} | {size:<5.2f} MB | {file}')
+                    size = 0
 
                 iter += 1
         
@@ -171,7 +185,6 @@ class Index:
 
     def store_tokens(self, page:Page_Data, tokens:dict[int, list[list[Token, int]]]):
         for bin, tokens in tokens.items():
-
             data = dict()
             with open(f'index_store/{bin}.json', 'r') as in_file:
                 data = json.load(in_file)
