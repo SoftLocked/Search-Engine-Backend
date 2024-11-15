@@ -118,8 +118,9 @@ class Index:
         for i in range(0, page_count, self.offload):
             iter = i + self.offload
             batch = i//self.offload + 1
+            batch_size = min(self.offload, page_count-i)
 
-            print(f"Batch {batch}: Processing Batch of {min(self.offload, page_count-i)} Files...")
+            print(f"Batch {batch}: Processing Batch of {batch_size} Files...")
 
             p = Pool()
             token_group = p.map(read_files, pages[i:i+self.offload])
@@ -136,7 +137,7 @@ class Index:
             print(f"Batch {batch}: Finished Adding!")
             print(f"Batch {batch}: Writing batch")
 
-            with open(f'index_store/{i}_pages_checkpoint.json', 'w') as out_file:
+            with open(f'index_store/{i + batch_size}_pages_checkpoint.json', 'w') as out_file:
                 #print(iter)
                 #print(self.current_index)
                 json.dump(self.current_index, out_file, indent=4)
@@ -158,9 +159,6 @@ class Index:
             
             #
             #temp_iter = 0
-        
-        with open(f'index_store/{iter}_pages_checkpoint.json', 'w') as out_file:
-            json.dump(self.current_index, out_file, indent=4)
 
         #with open('report.txt', 'w') as out_file:
             #out_file.write(f'Number of Documents Indexed: {num_docs}\n')
