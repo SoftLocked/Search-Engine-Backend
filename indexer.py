@@ -1,14 +1,20 @@
-from collections.abc import Iterator
 from pathlib import Path
 from bs4 import BeautifulSoup
 import json
-import shutil
 from nltk.stem import PorterStemmer
 from nltk.corpus import stopwords
 import time
 from datetime import datetime, timedelta
+from multiprocessing.dummy import Pool
+import sys
 
 ps = PorterStemmer()
+
+
+def read_files(file):
+    # print(f"Processing File | {file}" + (" "*25) + "\r", end='')
+    page = Page_Data(file)
+    return (page, page.get_tokens())
 
 class Token:
     def __init__(self, tok_str: str) -> None:
@@ -88,7 +94,8 @@ class Page_Data:
 
 
 class Index:
-    def __init__(self) -> None:
+    def __init__(self, offload) -> None:
+        self.offload = offload
         self.current_index = dict()
         for item in Path('index_store/').iterdir():
             if item.is_file():
@@ -102,63 +109,66 @@ class Index:
 
         root_path = Path('DEV/')
 
-        page_count = len(list(root_path.rglob("*.json")))
+        pages = list(root_path.rglob("*.json"))
 
-        size = 0
+        page_count = len(list(pages))
 
         start_time = time.time()
 
-        num_docs = 0
+        for i in range(0, page_count, self.offload):
+            iter = i + self.offload
+            batch = i//self.offload + 1
 
-        temp_iter = 0
-        iter = 0
-        for i, dir in enumerate(root_path.iterdir()):
-                
-            for j, file in enumerate(dir.iterdir()):
+            print(f"Batch {batch}: Processing Batch of {min(self.offload, page_count-i)} Files...")
 
-                if file.is_file() and file.suffix == '.json':
-                    page = Page_Data(file)
-                    self.store_tokens(page, page.get_tokens())
+            p = Pool()
+            token_group = p.map(read_files, pages[i:i+self.offload])
 
-                num_docs += 1
+            file_process = 1
 
-                size += file.stat().st_size/1000000
+            #print()
+            print(f"Batch {batch}: Finished Processing Batch!")
+            print(f"Batch {batch}: Adding Batch to Index...")
 
-                if (iter%10000 == 0):
-                    with open(f'index_store/{iter}_pages_checkpoint.json', 'w') as out_file:
-                        #print(iter)
-                        #print(self.current_index)
-                        json.dump(self.current_index, out_file, indent=4)
-                        self.current_index = dict()
+            for page,tokens in token_group:
+                self.store_tokens(page, tokens)
 
+            print(f"Batch {batch}: Finished Adding!")
+            print(f"Batch {batch}: Writing batch")
 
-                if (iter%100 == 0):
-                    curr_time = time.time()
-                    elapsed_time = curr_time - start_time
-                    eta = (elapsed_time)/(temp_iter+1) * (page_count - (iter + 1))
-                    eta = str(timedelta(seconds=eta))
-                    with open('report.txt', 'w') as out_file:
-                        out_file.write(f'Number of Documents Indexed: {num_docs}\n')
-                    perc = f'{100*(iter)/page_count:.4f} %'
-                    print(f'{datetime.now().strftime("%H:%M:%S")} | Processed File {iter:<5} of {page_count} | {perc:<10} | eta {eta:<10} | {size:<5.2f} MB | {file}')
-                    
-                    start_time = time.time()
-                    size = 0
-                    temp_iter = 0
+            with open(f'index_store/{i}_pages_checkpoint.json', 'w') as out_file:
+                #print(iter)
+                #print(self.current_index)
+                json.dump(self.current_index, out_file, indent=4)
+                self.current_index = dict()
 
-                temp_iter += 1
-                iter += 1
+            print(f"Batch {batch}: Finished Writing!")
+
+            print("Took: " + str(timedelta(seconds=time.time()-start_time)))
+            start_time = time.time()
+            
+            #curr_time = time.time()
+            #elapsed_time = curr_time - start_time
+            #eta = (elapsed_time)/(self.offload) * (page_count - (iter))
+            #eta = str(timedelta(seconds=eta))
+            #with open('report.txt', 'w') as out_file:
+                #out_file.write(f'Number of Documents Indexed: {num_docs}\n')
+            #perc = f'{100*(i)/page_count:.4f} %'
+            #print(f'{datetime.now().strftime("%H:%M:%S")} | Processed File {i+self.offload:<5} of {page_count} | {perc:<10} | eta {eta:<10}')
+            
+            #
+            #temp_iter = 0
         
         with open(f'index_store/{iter}_pages_checkpoint.json', 'w') as out_file:
             json.dump(self.current_index, out_file, indent=4)
 
-        with open('report.txt', 'w') as out_file:
-            out_file.write(f'Number of Documents Indexed: {num_docs}\n')
-        print('Indexing Compete!')
+        #with open('report.txt', 'w') as out_file:
+            #out_file.write(f'Number of Documents Indexed: {num_docs}\n')
 
-        print(f"Finished Processing! {iter} out of {page_count}")
+        print(f"Finished Processing! {page_count} Pages Processed.")
 
     def store_tokens(self, page:Page_Data, tokens:list[tuple[Token, int]]):
+        #print(tokens)
         for token, freq in tokens:
             if token.tok_str not in self.current_index:
                 self.current_index[token.tok_str] = [[page.url, freq]]
