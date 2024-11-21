@@ -39,6 +39,8 @@ def get_matches(posting_1: "List", posting_2: "List"):
     while (i != n and j != m):
         if posting_1[i] == posting_2[j]:
             matches.append(posting_1[i])
+            i += 1
+            j += 1
         elif posting_1[i] < posting_2[j]:
             i += 1
         else:
