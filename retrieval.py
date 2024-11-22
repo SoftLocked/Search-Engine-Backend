@@ -52,14 +52,18 @@ def get_matches(posting_1: list[tuple], posting_2: list[tuple]) -> list[tuple]:
     return matches
 
 def get_postings_list(word) -> list[tuple]:
-    file_num = abs(hash(word.islower())) % 5
-    print(file_num)
+    file_num = abs(hash(word)) % 5
+    # print(file_num)
+    # print(word)
     with open(f'{file_num}_index.json', 'r') as read_file:
         data = json.load(read_file)
         for key, value in data.items():
-            if key == word:
+            if key.lower() == word.lower():
                 return value
     return []
 
 if __name__ == '__main__':
+    # matches = boolean_query(["acm"])
+    # for i in matches:
+    #     print(i)
     pass
