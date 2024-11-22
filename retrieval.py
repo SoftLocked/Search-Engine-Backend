@@ -1,4 +1,5 @@
 import json
+import hashlib
 # 1) load 2 index posting lists at a time (maybe n docids from a posting list at a time in case 
 #    of not having enough memory)
 
@@ -52,10 +53,10 @@ def get_matches(posting_1: list[tuple], posting_2: list[tuple]) -> list[tuple]:
     return matches
 
 def get_postings_list(word) -> list[tuple]:
-    file_num = abs(hash(word)) % 5
+    file_num = int(hashlib.sha256(word.lower().encode()).hexdigest(), 16) % 5
     # print(file_num)
     # print(word)
-    with open(f'{file_num}_index.json', 'r') as read_file:
+    with open(f'index_store/{file_num}_index.json', 'r') as read_file:
         data = json.load(read_file)
         for key, value in data.items():
             if key.lower() == word.lower():
@@ -63,7 +64,7 @@ def get_postings_list(word) -> list[tuple]:
     return []
 
 if __name__ == '__main__':
-    # matches = boolean_query(["acm"])
-    # for i in matches:
-    #     print(i)
+    matches = boolean_query(["learning"])
+    for i in matches:
+        print(i)
     pass

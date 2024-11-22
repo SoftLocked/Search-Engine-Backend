@@ -1,4 +1,5 @@
 import json
+import hashlib
 import time
 from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool
@@ -43,7 +44,7 @@ def merge_tokens(partial_token_list):
             index_dict = json.load(file)
             for token in partial_token_list:     
                 if token in index_dict:
-                    bin = abs(hash(token.lower())) % 5
+                    bin = bin = int(hashlib.sha256(token.lower().encode()).hexdigest(), 16) % 5
                     if token in batches[bin]:
                         for post in index_dict[token]:
                             batches[bin][token].append(post)
