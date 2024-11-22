@@ -10,10 +10,16 @@ import sys
 
 ps = PorterStemmer()
 
+doc_id_dict = dict()
 
 def read_files(file):
     # print(f"Processing File | {file}" + (" "*25) + "\r", end='')
     page = Page_Data(file)
+    if (page.url in doc_id_dict):
+        pass
+    else:
+        doc_id = len(doc_id_dict)
+        doc_id_dict[page.url] = doc_id
     return (page, page.get_tokens())
 
 class Token:
@@ -147,6 +153,14 @@ class Index:
 
             print("Took: " + str(timedelta(seconds=time.time()-start_time)))
             start_time = time.time()
+
+            reversed_dict = {}
+
+            for key, value in doc_id_dict.items():
+                reversed_dict[value] = key
+
+            with open('DocID_Index.json', 'w') as file:
+                json.dump(reversed_dict, file)
             
             #curr_time = time.time()
             #elapsed_time = curr_time - start_time
@@ -169,9 +183,9 @@ class Index:
         #print(tokens)
         for token, freq in tokens:
             if token.tok_str not in self.current_index:
-                self.current_index[token.tok_str] = [[page.url, freq]]
+                self.current_index[token.tok_str] = [[doc_id_dict[page.url], freq]]
             else:
-                self.current_index[token.tok_str].append([page.url, freq])
+                self.current_index[token.tok_str].append([doc_id_dict[page.url], freq])
             
         
     
