@@ -98,16 +98,6 @@ def index_merge(token_list):
 
 
 if __name__ == '__main__':
-    #get_tokens()
+    get_tokens()
     token_list = open_token_json()
-    #index_merge([token_list[:10000], token_list[10000:20000], token_list[20000:30000], token_list[30000:40000], token_list[40000:50000], token_list[50000:]])
     pool_index_merge([token_list[:10000], token_list[10000:20000], token_list[20000:30000], token_list[30000:40000], token_list[40000:50000], token_list[50000:]])
-
-    """
-    for i in range(2000):
-        bin = abs(hash(token_list[i].lower())) % 5
-        print(token_list[i], bin)
-        with open(f'{bin}_index.json', 'r') as file:
-            index_dict = json.load(file)
-            print(index_dict[token_list[i]])
-    """
