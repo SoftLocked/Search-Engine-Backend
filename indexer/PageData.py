@@ -41,6 +41,8 @@ class PageData:
     def get_tokens(self) -> list[Token]:
         page_text = BeautifulSoup(self.content, 'lxml', from_encoding=self.encoding).text
 
+        # print(page_text)
+
         token_freq = dict()
 
         curr_buff = []

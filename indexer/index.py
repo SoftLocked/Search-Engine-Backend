@@ -5,6 +5,7 @@ import json
 import time
 from datetime import timedelta
 from multiprocessing.dummy import Pool, Manager
+import bisect
 
 from indexer.Token import Token
 from indexer.PageData import PageData
@@ -17,7 +18,7 @@ def read_files(args):
     v.value += 1
     # print(f"Processing File | {file}" + (" "*25) + "\r", end='')
     page = PageData(file)
-    if (page.url not in doc_id_dict):
+    if page.url not in doc_id_dict:
         doc_id = len(doc_id_dict)
         doc_id_dict[page.url] = doc_id
     return (page, page.get_tokens())
@@ -63,7 +64,6 @@ class Index:
                     break
                 else:
                     print(f"Files Processed: {q.value} of {batch_size} | {100*q.value/batch_size:.2f}%", end='\r')
-                    time.sleep(0.1)
 
             token_group = token_group.get()
 
@@ -104,9 +104,17 @@ class Index:
         #print(tokens)
         for token, freq in tokens:
             if token.tok_str not in self.current_index:
-                self.current_index[token.tok_str] = [[doc_id_dict[page.url], freq]]
+                self.current_index[token.tok_str] = [[freq, doc_id_dict[page.url]]]
             else:
-                self.current_index[token.tok_str].append([doc_id_dict[page.url], freq])
+                if freq <= self.current_index[token.tok_str][-1][0]:
+                    self.current_index[token.tok_str].append([freq, doc_id_dict[page.url]])
+                else:
+                    for i,v in enumerate( self.current_index[token.tok_str] ):
+                        if v[0] <= freq:
+                            self.current_index[token.tok_str].insert(i, [freq, doc_id_dict[page.url]])
+                            break
+                
+                
             
         
     

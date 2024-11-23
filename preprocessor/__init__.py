@@ -1,1 +1,2 @@
 from preprocessor.bin_index import BinIndex
+from preprocessor.bin_index import merge_two_sorted_lists
