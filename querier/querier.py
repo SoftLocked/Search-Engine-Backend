@@ -71,8 +71,3 @@ class Querier:
         )
 
         return urls
-        
-        print("--------------------------------------------------")
-        print(f'\t{'\n\t'.join(urls[:5])}')
-        print("--------------------------------------------------")
-        print(f"{len(urls)} URLs Found")
