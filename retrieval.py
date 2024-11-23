@@ -40,6 +40,7 @@ class Retrieval:
             if not new_posting:
                 return
             matches = self.get_matches(matches, new_posting)
+        save_matches(matches)
         self.print_found_urls(matches)
 
     def print_found_urls(self, posting: list[tuple]) -> None:
@@ -74,6 +75,11 @@ def get_matches(posting_1: list[tuple], posting_2: list[tuple]) -> list[tuple]:
         else:
             j += 1
     return matches
+
+def save_matches(matches):
+    with open("query_result.txt", "w") as f:
+        for match in matches:
+            f.write(match, "\n")
 
 if __name__ == '__main__':
     pass
