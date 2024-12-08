@@ -75,8 +75,10 @@ class Querier:
                             if i[1] not in self.rank:
                                 self.rank[i[1]] = [0] * (len(unique_tok_list) + 1)
                             tf = 1 + math.log(i[0],10)
+                            tf = i[0]
                             self.rank[i[1]][idx] = tf
                             self.rank[i[1]][-1] += tf**2
+                            #print(self.doc_ids[str(i[1])], self.rank[i[1]])
                         docid_sets[idx] = docid_set
                         self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10)
                     
@@ -84,7 +86,8 @@ class Querier:
 
 
     def merge_url_sets(self, url_sets):
-        return list(url_sets[0].intersection(*url_sets[1:]))
+        #return list(url_sets[0].intersection(*url_sets[1:]))
+        return list(url_sets[0].union(*url_sets[1:]))
     
     def query(self, query: str):
         token_list = self.query_to_tokens(query)
@@ -97,25 +100,30 @@ class Querier:
             urls = [self.doc_ids[str(i)] for i in urls]
             return urls
 
-        rank_list = list(self.tfidf(urls, token_list).keys())  
+        rank_dict = self.tfidf(urls, token_list)
+        rank_list = list(rank_dict.keys())  
         return rank_list
     
     
     def tfidf(self, docids:list, tokens:list):
         final_rank = dict()
 
+        # Uncomment to normalize
+        '''
         # normalize query idf
         q_length = math.sqrt(sum([value ** 2 for value in self.idf]))
 
         for i in range(len(self.idf)):
             self.idf[i] = self.idf[i]/q_length
-
-        # find cosine
+        '''
+        
+        # find rank (tf * idf)
         for doc in docids:
             rank = 0
             doc_len = math.sqrt(self.rank[doc][-1])
             for i in range(len(tokens)):
-                rank += self.rank[doc][i]/doc_len * self.idf[i]
+                #rank += self.rank[doc][i]/doc_len * self.idf[i]
+                rank += self.rank[doc][i] * self.idf[i]
             final_rank[self.doc_ids[str(doc)]] = rank 
 
         self.rank = dict()
