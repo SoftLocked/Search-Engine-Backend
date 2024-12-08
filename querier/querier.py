@@ -14,6 +14,7 @@ class Querier:
         self.idf = list()
         self.rank = dict()
         self.docfreq = 55393
+        self.strongMult = 5
         # preload the index and docid files
         with open(f'index/bin_index/{self.bins}.json') as in_file:
             self.stop_word_file = json.load(in_file)
@@ -54,12 +55,14 @@ class Querier:
                 else:
                     docid_set = set()
                     for i in self.stop_word_file[v.tok_str]:
-                        docid_set.add(i[1])
-                        if i[1] not in self.rank:
-                            self.rank[i[1]] = [0] * (len(unique_tok_list) + 1)
-                        tf = 1 + math.log(i[0],10)
-                        self.rank[i[1]][idx] = tf
-                        self.rank[i[1]][-1] += tf**2
+                        docid_set.add(i[0])
+                        if i[0] not in self.rank:
+                            self.rank[i[0]] = [0] * (len(unique_tok_list) + 1)
+                        agg_score = i[1][0]+ self.strongMult*i[1][1] #Strong is worth 5 hundred points OMG!!>!??!
+                        tf = 1 + math.log(agg_score,10)
+                        self.rank[i[0]][idx] = tf
+                        self.rank[i[0]][-1] += tf**2
+                        #print(self.doc_ids[str(i[1])], self.rank[i[1]])
                     docid_sets[idx] = docid_set
                     self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10)
             else:    
@@ -71,13 +74,13 @@ class Querier:
                     else:
                         docid_set = set()
                         for i in temp[v.tok_str]:
-                            docid_set.add(i[1])
-                            if i[1] not in self.rank:
-                                self.rank[i[1]] = [0] * (len(unique_tok_list) + 1)
-                            tf = 1 + math.log(i[0],10)
-                            tf = i[0]
-                            self.rank[i[1]][idx] = tf
-                            self.rank[i[1]][-1] += tf**2
+                            docid_set.add(i[0])
+                            if i[0] not in self.rank:
+                                self.rank[i[0]] = [0] * (len(unique_tok_list) + 1)
+                            agg_score = i[1][0]+ self.strongMult*i[1][1] #Strong is worth 5 hundred points OMG!!>!??!
+                            tf = 1 + math.log(agg_score,10)
+                            self.rank[i[0]][idx] = tf
+                            self.rank[i[0]][-1] += tf**2
                             #print(self.doc_ids[str(i[1])], self.rank[i[1]])
                         docid_sets[idx] = docid_set
                         self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10)
