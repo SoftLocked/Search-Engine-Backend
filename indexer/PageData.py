@@ -42,6 +42,8 @@ class PageData:
         soup =  BeautifulSoup(self.content, 'lxml', from_encoding=self.encoding)
         page_text = soup.get_text()
 
+        # print(page_text)
+
         token_freq = dict()
 
         curr_buff = []
