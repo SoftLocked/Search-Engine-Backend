@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 import json
-
+from time import sleep
 
 from indexer.Token import Token
 
@@ -39,7 +39,8 @@ class PageData:
         print(f'Attempted to change encoding | {self.encoding} -> {new_encoding}')
 
     def get_tokens(self) -> list[Token]:
-        page_text = BeautifulSoup(self.content, 'lxml', from_encoding=self.encoding).text
+        soup =  BeautifulSoup(self.content, 'lxml', from_encoding=self.encoding)
+        page_text = soup.get_text()
 
         token_freq = dict()
 
@@ -51,9 +52,9 @@ class PageData:
                 if len(curr_buff) > 0:
                     tok = Token(''.join(curr_buff))
                     if tok not in token_freq:
-                        token_freq[tok] = 1
+                        token_freq[tok] = [1,0]
                     else:
-                        token_freq[tok] += 1
+                        token_freq[tok][0] += 1
 
                 curr_buff = []
                 continue
@@ -64,5 +65,15 @@ class PageData:
                 token_freq[tok] = 1
             else:
                 token_freq[tok] += 1
-        
+
+        for tag in soup.find_all(["b", "h1", "h2", "h3"]):
+            words = tag.text.strip().split()
+            for word in words:
+                tok = Token(word)
+                if tok in token_freq:
+                    token_freq[tok][1] += 1
+
+        for token in token_freq:
+            token_freq[token][0] = token_freq[token][0] - token_freq[token][1]
+
         return token_freq.items()
