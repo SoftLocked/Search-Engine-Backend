@@ -86,6 +86,6 @@ class PageData:
 
 
         for token in token_freq:
-            token_freq[token][0] = token_freq[token][0] - token_freq[token][1]
+            token_freq[token][0] = token_freq[token][0] - token_freq[token][1] - token_freq[token][2]
 
         return token_freq.items()
