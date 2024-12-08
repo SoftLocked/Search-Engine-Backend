@@ -54,7 +54,7 @@ class PageData:
                 if len(curr_buff) > 0:
                     tok = Token(''.join(curr_buff))
                     if tok not in token_freq:
-                        token_freq[tok] = [1,0]
+                        token_freq[tok] = [1,0,0]
                     else:
                         token_freq[tok][0] += 1
 
@@ -64,16 +64,27 @@ class PageData:
         if len(curr_buff) > 0:
             tok = Token(''.join(curr_buff))
             if tok not in token_freq:
-                token_freq[tok] = [1,0]
+                token_freq[tok] = [1,0,0]
             else:
                 token_freq[tok][0] += 1
 
-        for tag in soup.find_all(["b", "h1", "h2", "h3"]):
+        for tag in soup.find_all(["b", "h1", "h2", "h3", "title"]):
             words = tag.text.strip().split()
             for word in words:
                 tok = Token(word)
                 if tok in token_freq:
                     token_freq[tok][1] += 1
+
+        for tag in soup.find_all(["title"]):
+            words = tag.text.strip().split()
+            for word in words:
+                tok = Token(word)
+                if tok in token_freq:
+                    token_freq[tok][2] += 1
+
+
+
+
         for token in token_freq:
             token_freq[token][0] = token_freq[token][0] - token_freq[token][1]
 
