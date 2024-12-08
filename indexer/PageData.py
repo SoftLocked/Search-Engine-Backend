@@ -68,19 +68,19 @@ class PageData:
             else:
                 token_freq[tok][0] += 1
 
-        for tag in soup.find_all(["b", "h1", "h2", "h3", "title"]):
+        for tag in soup.find_all(["b", "h1", "h2", "h3"]):
             words = tag.text.strip().split()
             for word in words:
                 tok = Token(word)
                 if tok in token_freq:
                     token_freq[tok][1] += 1
 
-        for tag in soup.find_all(["title"]):
-            words = tag.text.strip().split()
-            for word in words:
-                tok = Token(word)
-                if tok in token_freq:
-                    token_freq[tok][2] += 1
+        # for tag in soup.find_all(["title"]):
+        #     words = tag.text.strip().split()
+        #     for word in words:
+        #         tok = Token(word)
+        #         if tok in token_freq:
+        #             token_freq[tok][2] += 1
 
 
 
