@@ -14,7 +14,8 @@ class Querier:
         self.idf = list()
         self.rank = dict()
         self.docfreq = 55393
-        self.strongMult = 5
+        self.strongMult = 10
+        self.titleMult = 100
         # preload the index and docid files
         with open(f'index/bin_index/{self.bins}.json') as in_file:
             self.stop_word_file = json.load(in_file)
@@ -55,16 +56,16 @@ class Querier:
                 else:
                     docid_set = set()
                     for i in self.stop_word_file[v.tok_str]:
-                        docid_set.add(i[0])
-                        if i[0] not in self.rank:
-                            self.rank[i[0]] = [0] * (len(unique_tok_list) + 1)
-                        agg_score = i[1][0]+ self.strongMult*i[1][1] #Strong is worth 5 hundred points OMG!!>!??!
+                        docid_set.add(i[1])
+                        if i[1] not in self.rank:
+                            self.rank[i[1]] = [0] * (len(unique_tok_list) + 1)
+                        agg_score = i[0][0]+ self.strongMult*i[0][1] + + self.titleMult*i[0][2] 
                         tf = 1 + math.log(agg_score,10)
-                        self.rank[i[0]][idx] = tf
-                        self.rank[i[0]][-1] += tf**2
+                        self.rank[i[1]][idx] = tf
+                        self.rank[i[1]][-1] += tf**2
                         #print(self.doc_ids[str(i[1])], self.rank[i[1]])
                     docid_sets[idx] = docid_set
-                    self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10)
+                    self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10) * tok_list.count(v)
             else:    
                 
                 with open(f"index/bin_index/{hash(v)%self.bins}.json") as in_file:
@@ -74,16 +75,15 @@ class Querier:
                     else:
                         docid_set = set()
                         for i in temp[v.tok_str]:
-                            docid_set.add(i[0])
-                            if i[0] not in self.rank:
-                                self.rank[i[0]] = [0] * (len(unique_tok_list) + 1)
-                            agg_score = i[1][0]+ self.strongMult*i[1][1] #Strong is worth 5 hundred points OMG!!>!??!
-                            tf = 1 + math.log(agg_score,10)
-                            self.rank[i[0]][idx] = tf
-                            self.rank[i[0]][-1] += tf**2
-                            #print(self.doc_ids[str(i[1])], self.rank[i[1]])
+                            docid_set.add(i[1])
+                            if i[1] not in self.rank:
+                                self.rank[i[1]] = [0] * (len(unique_tok_list) + 1)
+                            agg_score = i[0][0]+ self.strongMult*i[0][1] + self.titleMult*i[0][2] 
+                            tf = 1 + math.log(agg_score,10) + 1
+                            self.rank[i[1]][idx] = tf
+                            self.rank[i[1]][-1] += tf**2
                         docid_sets[idx] = docid_set
-                        self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10)
+                        self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10) * tok_list.count(v)
                     
         return docid_sets
 
@@ -103,7 +103,7 @@ class Querier:
             urls = [self.doc_ids[str(i)] for i in urls]
             return urls
 
-        rank_dict = self.tfidf(urls, token_list)
+        rank_dict = self.tfidf(urls, list(set(token_list)))
         rank_list = list(rank_dict.keys())  
         return rank_list
     
@@ -123,7 +123,7 @@ class Querier:
         # find rank (tf * idf)
         for doc in docids:
             rank = 0
-            doc_len = math.sqrt(self.rank[doc][-1])
+            #doc_len = math.sqrt(self.rank[doc][-1])
             for i in range(len(tokens)):
                 #rank += self.rank[doc][i]/doc_len * self.idf[i]
                 rank += self.rank[doc][i] * self.idf[i]
@@ -132,5 +132,4 @@ class Querier:
         self.rank = dict()
         self.idf = list()
         final_rank = dict(sorted(final_rank.items(), key=lambda item: item[1], reverse = True))
-
         return final_rank
