@@ -13,20 +13,25 @@ q = Querier(10000)
 def get_string(querystr):
     start_time = time.monotonic()
     
-    print(len(q.query(querystr)))
-    result = np.array(q.query(querystr))
-    if len(result)%10 != 0:
-        result = np.array(result[:-(len(result)%10)]).reshape(-1, 10).tolist()
-        result.append(result[-(len(result)%10):])
+    result = q.query(querystr)
+    print(result)
+    if len(result) > 10:
+        if len(result)%10 != 0:
+            result = np.array(result[:-(len(result)%10)]).reshape(-1, 10).tolist()
+            result.append(result[-(len(result)%10):])
+        else:
+            result = np.array(result).reshape(-1, 10).tolist()
     else:
-        result = result.reshape(-1, 10).tolist()
+        result = [result]
+    print(type(result))
     
     
     query_result = jsonify({
-        'results': result
+        'results': result,
+        'timeTaken': f'{((time.monotonic() - start_time) * 1000):.3f}'
         })
     query_result.headers.add('Access-Control-Allow-Origin', '*')
-    print(f"Took {(time.monotonic() - start_time):.3f} Seconds\n")
+    print(f"Took {((time.monotonic() - start_time)/1000):.3f} Seconds\n")
     return query_result, 200
   
   
