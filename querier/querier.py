@@ -63,6 +63,8 @@ class Querier:
                         tf = 1 + math.log(agg_score,10)
                         self.rank[i[1]][idx] = tf
                         self.rank[i[1]][-1] += tf**2
+                        self.rank[i[1]][idx] = tf
+                        self.rank[i[1]][-1] += tf**2
                         #print(self.doc_ids[str(i[1])], self.rank[i[1]])
                     docid_sets[idx] = docid_set
                     self.idf[idx] = math.log((self.docfreq/len(docid_sets[idx])),10) * tok_list.count(v)
